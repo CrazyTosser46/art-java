@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package ru.reindexer.api.proto;
+
+message ConnectionRequest {
+  string dns = 1;
+  ConnectionOpts connectionOpts = 2;
+}
+
+message ConnectionOpts {
+  int64 clusterId = 1;
+  bool openNamespace = 2;
+  bool allowNamespaceError = 3;
+  bool autorepair = 4;
+  bool checkClusterId = 5;
+}
+
+message Error {
+  ErrorCode errorCode = 1;
+  string errorMessage = 2;
+}
+
+enum ErrorCode {
+    OK = 0;
+    PARSE_SQL = 1;
+    QUERY_EXEC = 2;
+    PARAMS = 3;
+    LOGIC = 4;
+    PARSE_JSON = 5;
+    PARSE_DSL = 6;
+    CONFLICT = 7;
+    PARSE_BIN = 8;
+    FORBIDDEN = 9;
+    WAS_RELOCK = 10;
+    NOT_VALID = 11;
+    NETWORK = 12;
+    NOT_FOUND = 13;
+    STATE_INVALIDATED = 14;
+    BAD_TRANSACTION = 15;
+    OUT_DATED_WAL = 16;
+    NO_WAL = 17;
+    DATA_HASHM_ISMATCH = 18;
+    TIMEOUT = 19;
+    CANCELED = 20;
+    TAGS_MISSMATCH = 21;
+    REPL_PARAMS = 22;
+    NAMESPACE_INVALIDATED = 23;
+    PARSE_MSG_PACK = 24;
+}

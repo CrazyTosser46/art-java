@@ -1,4 +1,3 @@
-import org.eclipse.jgit.api.Git.*
 
 /*
  * ART Java
@@ -18,24 +17,66 @@ import org.eclipse.jgit.api.Git.*
  * limitations under the License.
  */
 
+import com.google.protobuf.gradle.*
+import java.nio.file.Files
+import java.nio.file.Paths
+
 plugins {
-    id("org.ajoberstar.grgit") version "1.7.2"
+    id("com.google.protobuf")
+    `java-library`
 }
 
-task("getReindexer") {
-    group = "reindexer"
-    doLast {
-        if (!file("$projectDir/src/main/cpp/reindexer").exists()) {
-            cloneRepository()
-                    .setURI("https://github.com/Restream/reindexer")
-                    .setDirectory(file("$projectDir/src/main/cpp/reindexer"))
-                    .call()
-            return@doLast
-        }
-        open(file("$projectDir/src/main/cpp/reindexer"))
-                .pull()
-                .setRemote("origin")
-                .setRemoteBranchName("master")
-                .call()
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    embedded("com.google.protobuf:protobuf-java:3.13.0")
+}
+
+sourceSets {
+    main {
+        proto.srcDir("src/main/proto")
+        java.srcDir("${buildDir}/generated/source/proto/main/java")
     }
+}
+
+protobuf {
+    plugins {
+        id("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:1.33.1"
+        }
+    }
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.13.0"
+    }
+    generateProtoTasks {
+        ofSourceSet("main").forEach {
+            it.builtins {
+                create("cpp") {
+                }
+            }
+        }
+    }
+}
+
+tasks.register<Copy>("copyProtoFilesForCpp") {
+    Files.createDirectories( Paths.get("${projectDir}/src/main/cpp/src/api/proto"))
+    from("${buildDir}/generated/source/proto/main/cpp")
+    into("${projectDir}/src/main/cpp/src/api/proto")
+}
+
+tasks.clean {
+    delete.add("${projectDir}/src/main/cpp/src/api/proto")
+    delete.add("${projectDir}/src/main/cpp/src/api/java")
+}
+
+tasks.compileJava {
+    options.compilerArgs.addAll(mutableListOf("-h", "${projectDir}/src/main/cpp/src/api/java"))
+    options.isFork = true
+    options.forkOptions.executable = "javac"
+}
+
+tasks.classes {
+    dependsOn("copyProtoFilesForCpp")
 }

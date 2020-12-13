@@ -30,6 +30,7 @@ plugins {
     id("io.github.art.project") version "1.0.97"
     id("com.jfrog.bintray") version "1.8.4"
     id("com.jfrog.artifactory") version "4.10.0"
+    id("com.google.protobuf") version "0.8.13"
 }
 
 tasks.withType(Wrapper::class.java) {

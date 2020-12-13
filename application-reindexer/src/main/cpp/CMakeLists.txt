@@ -1,12 +1,29 @@
 cmake_minimum_required(VERSION 3.5)
 project(application-reindexer)
+include(FetchContent)
 
+set(FETCHCONTENT_QUIET OFF)
+
+#Configure gRPC
+FetchContent_Declare(
+        gRPC
+        GIT_REPOSITORY https://github.com/grpc/grpc
+        GIT_TAG        v1.33.1
+)
+#Configure reindexer
+FetchContent_Declare(
+        reindexer
+        GIT_REPOSITORY https://github.com/Restream/reindexer
+        GIT_TAG        v2.14.1
+)
+FetchContent_MakeAvailable(gRPC reindexer)
+
+set(REINDEXER_SOURCE_PATH cmake-build-debug/_deps/reindexer-src/cpp_src)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(REINDEXER_SOURCE_PATH reindexer/cpp_src)
 set (REINDEXER_LIB reindexer.x64)
 set (REINDEXER_EXE reindexer.x64.executable)
-set(SOURCE_FILES src/Main.h src/Main.cpp)
+set(SOURCE_FILES src/Main.h src/Main.cpp src/java/ReindexerJavaApi.cpp src/api/java/ru_reindexer_api_ReindexerNativeApi.h)
 if (MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -wd4244 -wd4267 -wd4996 -wd4717 -MP")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd4244 -wd4267 -wd4996 -wd4717 -wd4800 -wd4396 -wd4503 -MP")
@@ -17,9 +34,8 @@ else ()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11  -Wall -Wextra -Wold-style-cast")
 endif ()
 option (ENABLE_ROCKSDB OFF)
-
-add_subdirectory(reindexer/cpp_src)
-
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-variable")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
 find_package(JNI REQUIRED)
 include_directories(
         ${LIBSRC_DIR}
@@ -28,13 +44,8 @@ include_directories(
         ${REINDEXER_SOURCE_PATH}
         ${REINDEXER_SOURCE_PATH}/vendor)
 
-
-link_directories(${REINDEXER_LINK_DIRECTORIES_GLOBAL})
-
 add_library(${REINDEXER_LIB} SHARED ${SOURCE_FILES})
-add_dependencies(${REINDEXER_LIB} reindexer)
-target_link_libraries(${REINDEXER_LIB} ${REINDEXER_LIBRARIES_GLOBAL})
+target_link_libraries(${REINDEXER_LIB} grpc++ reindexer)
 
 add_executable(${REINDEXER_EXE} ${SOURCE_FILES})
-add_dependencies(${REINDEXER_EXE} reindexer)
-target_link_libraries(${REINDEXER_EXE} ${REINDEXER_LIBRARIES_GLOBAL})
+target_link_libraries(${REINDEXER_EXE} grpc++ reindexer)
